@@ -1,0 +1,6 @@
+{
+  "name": "Go",
+  "description": "A clean, distraction-free browser designed for students, featuring progress synchronization, skill tracking, a focus mode website blocker, and an integrated Gemini AI companion with Google Search & Maps grounding and Voice Transcription.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

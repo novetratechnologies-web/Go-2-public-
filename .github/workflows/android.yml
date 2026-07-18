@@ -1,0 +1,75 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | sdkmanager --licenses || true
+
+      - name: Generate local.properties if missing
+        run: |
+          if [ ! -f local.properties ]; then
+            echo "sdk.dir=$ANDROID_HOME" > local.properties
+          fi
+
+      - name: Restore debug.keystore
+        run: |
+          if [ -f debug.keystore.base64 ]; then
+            echo "Decoding debug.keystore from base64..."
+            base64 -d debug.keystore.base64 > debug.keystore
+          elif [ -f debug.keystore ]; then
+            echo "debug.keystore already exists."
+          else
+            echo "Warning: No debug.keystore or base64 file found! Creating a fallback debug.keystore..."
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
+      - name: Inject Environment Secrets
+        run: |
+          if [ -n "${{ secrets.GEMINI_API_KEY }}" ]; then
+            echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > .env
+          else
+            echo "No GEMINI_API_KEY secret found, copying fallback from .env.example..."
+            cp .env.example .env
+          fi
+
+      - name: Ensure Gradle Wrapper exists
+        run: |
+          if [ ! -f gradlew ]; then
+            echo "Gradle wrapper missing, generating..."
+            gradle wrapper
+          fi
+          chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew :app:assembleDebug
+
+      - name: Upload Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
