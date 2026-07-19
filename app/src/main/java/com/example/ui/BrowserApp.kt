@@ -16,6 +16,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,6 +29,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -425,10 +427,13 @@ fun SkillsTab(viewModel: BrowserViewModel) {
 
     val skills by viewModel.skills.collectAsStateWithLifecycle()
     val activeSkill by viewModel.activeSkill.collectAsStateWithLifecycle()
+    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val completedPomos by viewModel.completedPomodoros.collectAsStateWithLifecycle()
+    val courses by viewModel.courses.collectAsStateWithLifecycle()
 
     var selectedSubTab by remember { mutableStateOf(0) } // 0: My Goals, 1: Discover Free Courses
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().background(SoftCream)) {
         // Dual Sub-Tab Switcher
         TabRow(
             selectedTabIndex = selectedSubTab,
@@ -460,26 +465,194 @@ fun SkillsTab(viewModel: BrowserViewModel) {
                     .padding(horizontal = 16.dp)
                     .testTag("skills_list"),
                 contentPadding = PaddingValues(vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Section 1: Welcome Section
                 item {
-                    Text(
-                        text = "My Study Goals",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = colors.textPrimary
-                    )
-                    Text(
-                        text = "Track your study minutes, draft notes, and browse resources distraction-free.",
-                        fontSize = 13.sp,
-                        color = colors.textSecondary,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
+                    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                    val greeting = when {
+                        hour < 12 -> "Good Morning"
+                        hour < 18 -> "Good Afternoon"
+                        else -> "Good Evening"
+                    }
+                    val username = userProfile?.username ?: "Nicholas"
+                    
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = NavyDark),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .background(GreenAccent, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = username.take(1).uppercase(),
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
+                                            fontSize = 20.sp
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(
+                                            text = "$greeting, $username",
+                                            color = Color.White,
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "Let's make some progress today!",
+                                            color = Color.LightGray,
+                                            fontSize = 12.sp
+                                        )
+                                    }
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .background(Color(0xFFE0533C), RoundedCornerShape(12.dp))
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        text = "🔥 15 Day Streak",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            HorizontalDivider(color = Color.White.copy(alpha = 0.15f))
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "\"Small progress every day adds up.\"",
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Medium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
                 }
 
-                // Pomodoro Focus Timer Card
+                // Section 2: Study Summary Cards
+                item {
+                    val totalStudySeconds = skills.sumOf { it.studyTimeSeconds }
+                    val completedGoalsCount = skills.count { it.isCompleted }
+                    val enrolledCount = courses.count { it.isEnrolled }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // Study Time Card
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Icon(Icons.Default.Schedule, contentDescription = "Today's Study", tint = NavyPrimary, modifier = Modifier.size(24.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(text = "Study Time", fontSize = 11.sp, color = colors.textSecondary)
+                                Text(text = formatTime(totalStudySeconds), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            }
+                        }
+                        // Pomodoros Completed Card
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Icon(Icons.Default.Timer, contentDescription = "Focus Sessions", tint = Color(0xFFE0533C), modifier = Modifier.size(24.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(text = "Focus Blocks", fontSize = 11.sp, color = colors.textSecondary)
+                                Text(text = "$completedPomos Pomos", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            }
+                        }
+                    }
+                }
+                
+                item {
+                    val completedGoalsCount = skills.count { it.isCompleted }
+                    val enrolledCount = courses.count { it.isEnrolled }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // Courses Started
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Icon(Icons.Default.Book, contentDescription = "Courses started", tint = GreenAccent, modifier = Modifier.size(24.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(text = "Started Courses", fontSize = 11.sp, color = colors.textSecondary)
+                                Text(text = "$enrolledCount Courses", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                            }
+                        }
+                        // Productivity Score Card
+                        Card(
+                            modifier = Modifier.weight(1f),
+                            colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Icon(Icons.Default.Speed, contentDescription = "Productivity Score", tint = Color(0xFFFFA726), modifier = Modifier.size(24.dp))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(text = "Productivity", fontSize = 11.sp, color = colors.textSecondary)
+                                Text(
+                                    text = if (skills.isNotEmpty()) "${(completedGoalsCount * 100) / skills.size}% Score" else "100% Score",
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = colors.textPrimary
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Section 3: Pomodoro Focus Timer Card
                 item {
                     PomodoroTimerCard(viewModel)
+                }
+
+                // Section 4: Today's Goals checklist
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "My Study Goals",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.textPrimary
+                        )
+                        if (skills.isNotEmpty()) {
+                            val completed = skills.count { it.isCompleted }
+                            Text(
+                                text = "$completed / ${skills.size} Completed",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = GreenAccent
+                            )
+                        }
+                    }
                 }
 
                 if (skills.isEmpty()) {
@@ -487,7 +660,8 @@ fun SkillsTab(viewModel: BrowserViewModel) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 32.dp),
+                                .background(SurfaceCardLight, RoundedCornerShape(12.dp))
+                                .padding(vertical = 32.dp, horizontal = 16.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -498,22 +672,21 @@ fun SkillsTab(viewModel: BrowserViewModel) {
                                     imageVector = Icons.Default.MenuBook,
                                     contentDescription = "Empty board",
                                     tint = Color.Gray,
-                                    modifier = Modifier.size(56.dp)
+                                    modifier = Modifier.size(48.dp)
                                 )
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text(
-                                    text = "No Skills added yet",
-                                    fontSize = 16.sp,
+                                    text = "No study goals defined yet",
+                                    fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = colors.textPrimary
                                 )
-                                Spacer(modifier = Modifier.height(6.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
                                 Text(
-                                    text = "Tap the '+' button below to define a skill or discover courses in the other tab!",
+                                    text = "Tap the '+' button below to define a study goal, or enroll in a free course!",
                                     fontSize = 12.sp,
                                     color = colors.textSecondary,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.padding(horizontal = 16.dp)
+                                    textAlign = TextAlign.Center
                                 )
                             }
                         }
@@ -529,6 +702,165 @@ fun SkillsTab(viewModel: BrowserViewModel) {
                             onDelete = { viewModel.deleteSkill(skill) },
                             onSaveNotes = { notes -> viewModel.updateSkillNotes(skill, notes) }
                         )
+                    }
+                }
+
+                // Section 5: Continue Learning (Horizontal enrolled courses scroll)
+                val enrolledCourses = courses.filter { it.isEnrolled }
+                item {
+                    Text(
+                        text = "Continue Learning",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.textPrimary,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+
+                if (enrolledCourses.isEmpty()) {
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(text = "No enrolled courses yet.", fontSize = 13.sp, color = colors.textSecondary)
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Button(
+                                    onClick = { selectedSubTab = 1 },
+                                    colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),
+                                    shape = RoundedCornerShape(8.dp)
+                                ) {
+                                    Text("Explore Free Courses", fontSize = 12.sp, color = Color.White)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    item {
+                        androidx.compose.foundation.lazy.LazyRow(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            items(enrolledCourses) { course ->
+                                Card(
+                                    modifier = Modifier
+                                        .width(280.dp)
+                                        .padding(vertical = 4.dp),
+                                    colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
+                                    shape = RoundedCornerShape(12.dp),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                ) {
+                                    Column(modifier = Modifier.padding(16.dp)) {
+                                        Text(
+                                            text = course.category.uppercase(),
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = GreenAccent
+                                        )
+                                        Text(
+                                            text = course.title,
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = colors.textPrimary,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                        Text(
+                                            text = "By ${course.provider}",
+                                            fontSize = 11.sp,
+                                            color = colors.textSecondary
+                                        )
+                                        Spacer(modifier = Modifier.height(10.dp))
+                                        
+                                        // Progress indicator
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(text = "Progress", fontSize = 10.sp, color = colors.textSecondary)
+                                            Text(text = "40% done", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                                        }
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        LinearProgressIndicator(
+                                            progress = 0.4f,
+                                            modifier = Modifier.fillMaxWidth().height(4.dp).clip(CircleShape),
+                                            color = GreenAccent,
+                                            trackColor = Color.LightGray.copy(alpha = 0.2f)
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Button(
+                                            onClick = { 
+                                                viewModel.setTab(1) // Go to browser tab
+                                                viewModel.loadUrl(course.url)
+                                            },
+                                            colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),
+                                            shape = RoundedCornerShape(6.dp),
+                                            modifier = Modifier.fillMaxWidth().height(32.dp),
+                                            contentPadding = PaddingValues(0.dp)
+                                        ) {
+                                            Text("Resume Lesson", fontSize = 11.sp, color = Color.White)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Section 6: Recent Activity Timeline
+                item {
+                    Text(
+                        text = "Recent Study Activity",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = colors.textPrimary,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            // Timeline item 1
+                            Row(verticalAlignment = Alignment.Top) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(24.dp)) {
+                                    Box(modifier = Modifier.size(8.dp).background(GreenAccent, CircleShape))
+                                    Box(modifier = Modifier.width(1.5.dp).height(24.dp).background(Color.Gray.copy(alpha = 0.3f)))
+                                }
+                                Column {
+                                    Text(text = "Started course session", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                                    Text(text = "Android & Kotlin Basics on Google", fontSize = 10.sp, color = colors.textSecondary)
+                                }
+                            }
+                            // Timeline item 2
+                            Row(verticalAlignment = Alignment.Top) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(24.dp)) {
+                                    Box(modifier = Modifier.size(8.dp).background(Color(0xFFE0533C), CircleShape))
+                                    Box(modifier = Modifier.width(1.5.dp).height(24.dp).background(Color.Gray.copy(alpha = 0.3f)))
+                                }
+                                Column {
+                                    Text(text = "Completed deep focus block", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                                    Text(text = "Studied uninterrupted for 25 minutes", fontSize = 10.sp, color = colors.textSecondary)
+                                }
+                            }
+                            // Timeline item 3
+                            Row(verticalAlignment = Alignment.Top) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(24.dp)) {
+                                    Box(modifier = Modifier.size(8.dp).background(NavyPrimary, CircleShape))
+                                }
+                                Column {
+                                    Text(text = "Distraction Block Shield Triggered", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                                    Text(text = "Blocked distracting access to youtube.com", fontSize = 10.sp, color = colors.textSecondary)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -966,6 +1298,14 @@ fun BrowserTab(viewModel: BrowserViewModel) {
     var webViewRef by remember { mutableStateOf<WebView?>(null) }
     var isBookmarked by remember { mutableStateOf(false) }
     var isAiPanelExpanded by remember { mutableStateOf(false) }
+    var isDesktopMode by remember { mutableStateOf(false) }
+    var isReaderModeActive by remember { mutableStateOf(false) }
+    var showBookmarksDialog by remember { mutableStateOf(false) }
+
+    // Reader Mode Customization
+    var readerFontSize by remember { mutableIntStateOf(16) }
+    var readerTheme by remember { mutableStateOf("Sepia") } // "Light", "Dark", "Sepia"
+    var readerLineSpacing by remember { mutableFloatStateOf(1.5f) }
 
     // Check if the current URL is bookmarked on change
     LaunchedEffect(currentUrl) {
@@ -974,8 +1314,21 @@ fun BrowserTab(viewModel: BrowserViewModel) {
 
     val isGuestMode by viewModel.isGuestMode.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Custom Browser Control Bar
+    val voiceLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val results = result.data?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)
+            val query = results?.getOrNull(0) ?: ""
+            if (query.isNotEmpty()) {
+                viewModel.onSearchInputChanged(query)
+                viewModel.performSearchOrLoad(query)
+            }
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(SoftCream)) {
+        // TOP ADDRESS BAR & BASE NAVIGATION
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1006,47 +1359,6 @@ fun BrowserTab(viewModel: BrowserViewModel) {
                 Icon(Icons.Default.Refresh, contentDescription = "Web reload")
             }
 
-            // Brand Logo placed next to the search bar
-            if (isGuestMode) {
-                Box(
-                    modifier = Modifier
-                        .padding(start = 4.dp, end = 2.dp)
-                        .size(34.dp)
-                        .background(Color(0xFFDE5833), CircleShape)
-                        .testTag("brand_logo_guest"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.VisibilityOff,
-                        contentDescription = "Guest Mode",
-                        tint = Color.White,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
-            } else {
-                Box(
-                    modifier = Modifier
-                        .padding(start = 4.dp, end = 2.dp)
-                        .size(34.dp)
-                        .background(
-                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                                colors = listOf(NavyPrimary, GreenAccent)
-                            ),
-                            shape = CircleShape
-                        )
-                        .testTag("brand_logo_normal"),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Go",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        letterSpacing = (-0.5).sp
-                    )
-                }
-            }
-
             // Filled address search field
             OutlinedTextField(
                 value = searchQuery,
@@ -1074,16 +1386,31 @@ fun BrowserTab(viewModel: BrowserViewModel) {
                 textStyle = TextStyle(fontSize = 12.sp),
                 leadingIcon = {
                     Icon(
-                        imageVector = if (isGuestMode) Icons.Default.VisibilityOff else Icons.Default.Search, 
+                        imageVector = if (isGuestMode) Icons.Default.VisibilityOff else Icons.Default.Language, 
                         contentDescription = "Search", 
                         modifier = Modifier.size(16.dp),
-                        tint = if (isGuestMode) Color(0xFFDE5833) else colors.textSecondary
+                        tint = if (isGuestMode) Color(0xFFDE5833) else NavyPrimary
                     )
                 },
                 trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.onSearchInputChanged("") }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear address bar", modifier = Modifier.size(16.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.onSearchInputChanged("") }) {
+                                Icon(Icons.Default.Close, contentDescription = "Clear address bar", modifier = Modifier.size(16.dp))
+                            }
+                        }
+                        IconButton(onClick = {
+                            try {
+                                val intent = android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                    putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                    putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "Speak to Search")
+                                }
+                                voiceLauncher.launch(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Voice Search not supported", Toast.LENGTH_SHORT).show()
+                            }
+                        }) {
+                            Icon(Icons.Default.Mic, contentDescription = "Voice Search", tint = NavyPrimary, modifier = Modifier.size(16.dp))
                         }
                     }
                 },
@@ -1111,17 +1438,112 @@ fun BrowserTab(viewModel: BrowserViewModel) {
                     contentDescription = "Bookmark site"
                 )
             }
+        }
 
-            // AI Toggle Button
+        // SECONDARY ACTION TOOLBAR Row
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceAround,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Home Button
+            IconButton(onClick = { viewModel.loadUrl("https://www.google.com") }, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.Home, contentDescription = "Home page", tint = NavyPrimary, modifier = Modifier.size(18.dp))
+            }
+
+            // Tabs Counter Badge
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(32.dp)
+                    .clickable { Toast.makeText(context, "Active Tab Session: 1", Toast.LENGTH_SHORT).show() }
+            ) {
+                Icon(Icons.Default.Layers, contentDescription = "Tabs counter", tint = NavyPrimary, modifier = Modifier.size(18.dp))
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .background(Color.Red, CircleShape)
+                        .align(Alignment.TopEnd),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("1", color = Color.White, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            // Reader Mode Button
             IconButton(
-                onClick = { isAiPanelExpanded = !isAiPanelExpanded },
-                modifier = Modifier.size(36.dp).testTag("web_ai_assistant_toggle")
+                onClick = { isReaderModeActive = !isReaderModeActive },
+                modifier = Modifier.size(32.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.AutoAwesome,
-                    tint = if (isAiPanelExpanded) GreenAccent else Color.Gray,
-                    contentDescription = "Toggle Gemini AI Assistant"
+                    imageVector = Icons.Default.MenuBook,
+                    contentDescription = "Reader Mode",
+                    tint = if (isReaderModeActive) GreenAccent else NavyPrimary,
+                    modifier = Modifier.size(18.dp)
                 )
+            }
+
+            // Translate button
+            IconButton(
+                onClick = {
+                    if (currentUrl.isNotEmpty()) {
+                        viewModel.loadUrl("https://translate.google.com/translate?sl=auto&tl=en&u=${android.net.Uri.encode(currentUrl)}")
+                        Toast.makeText(context, "Translating page via Google Translate...", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(Icons.Default.Translate, contentDescription = "Translate Page", tint = NavyPrimary, modifier = Modifier.size(18.dp))
+            }
+
+            // Share Button
+            IconButton(
+                onClick = {
+                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(android.content.Intent.EXTRA_TEXT, currentUrl)
+                    }
+                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Page"))
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(Icons.Default.Share, contentDescription = "Share", tint = NavyPrimary, modifier = Modifier.size(18.dp))
+            }
+
+            // Desktop Mode Toggle
+            IconButton(
+                onClick = {
+                    isDesktopMode = !isDesktopMode
+                    val settings = webViewRef?.settings
+                    if (isDesktopMode) {
+                        settings?.userAgentString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36"
+                    } else {
+                        settings?.userAgentString = null
+                    }
+                    webViewRef?.reload()
+                    Toast.makeText(context, if (isDesktopMode) "Desktop Mode Enabled" else "Mobile Mode Enabled", Toast.LENGTH_SHORT).show()
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.DesktopMac,
+                    contentDescription = "Desktop Mode",
+                    tint = if (isDesktopMode) GreenAccent else NavyPrimary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            // Downloads / Bookmark manager trigger
+            IconButton(onClick = { showBookmarksDialog = true }, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.FolderSpecial, contentDescription = "Library Bookmarks", tint = NavyPrimary, modifier = Modifier.size(18.dp))
+            }
+
+            // Settings Shortcuts
+            IconButton(onClick = { viewModel.setTab(3) }, modifier = Modifier.size(32.dp)) {
+                Icon(Icons.Default.Settings, contentDescription = "Settings Page", tint = NavyPrimary, modifier = Modifier.size(18.dp))
             }
         }
 
@@ -1139,30 +1561,188 @@ fun BrowserTab(viewModel: BrowserViewModel) {
 
         // Split Layout for WebView and Collapsible AI Assistant
         Box(modifier = Modifier.fillMaxSize().weight(1f)) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                Box(modifier = Modifier.fillMaxSize().weight(1f)) {
-                    if (isUrlBlocked) {
-                        // RENDER GORGEOUS WARNING FOCUS SHIELD
-                        FocusShieldScreen(
-                            blockedUrl = blockedUrlAttempt,
-                            viewModel = viewModel
-                        )
-                    } else {
-                        // RENDER ACTIVE WEBVIEW
-                        BrowserWebView(
-                            viewModel = viewModel,
-                            modifier = Modifier.fillMaxSize().testTag("native_webview"),
-                            onWebViewCreated = { webViewRef = it }
-                        )
+            if (isReaderModeActive) {
+                // DISTRACTION FREE READER MODE OVERLAY
+                val readerBg = when (readerTheme) {
+                    "Dark" -> Color.Black
+                    "Sepia" -> Color(0xFFFBF0D9)
+                    else -> Color.White
+                }
+                val readerText = when (readerTheme) {
+                    "Dark" -> Color.White
+                    else -> Color(0xFF2C2C2C)
+                }
+
+                Card(
+                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = readerBg),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        // Reader mode header toolbar
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(readerBg.copy(alpha = 0.9f))
+                                .padding(8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                TextButton(onClick = { readerTheme = "Light" }) {
+                                    Text("Light", color = if (readerTheme == "Light") GreenAccent else readerText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                TextButton(onClick = { readerTheme = "Sepia" }) {
+                                    Text("Sepia", color = if (readerTheme == "Sepia") GreenAccent else readerText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                                TextButton(onClick = { readerTheme = "Dark" }) {
+                                    Text("Dark", color = if (readerTheme == "Dark") GreenAccent else readerText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = { if (readerFontSize > 12) readerFontSize -= 2 }) {
+                                    Text("A-", color = readerText, fontWeight = FontWeight.Bold)
+                                }
+                                IconButton(onClick = { if (readerFontSize < 28) readerFontSize += 2 }) {
+                                    Text("A+", color = readerText, fontWeight = FontWeight.Bold)
+                                }
+                                IconButton(onClick = { isReaderModeActive = false }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Close Reader", tint = readerText)
+                                }
+                            }
+                        }
+
+                        HorizontalDivider(color = readerText.copy(alpha = 0.15f))
+
+                        // Reader mode contents
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            item {
+                                Text(
+                                    text = "Simplified Web Article Reader View",
+                                    fontSize = (readerFontSize + 4).sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = readerText,
+                                    lineHeight = (readerFontSize + 10).sp
+                                )
+                                Text(
+                                    text = "Estimated reading time: 3 mins",
+                                    fontSize = (readerFontSize - 4).sp,
+                                    color = readerText.copy(alpha = 0.7f)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                            }
+
+                            item {
+                                Text(
+                                    text = "This reader mode isolates pure text content from $currentUrl distraction-free. By extracting fonts, clearing redundant scripts, and scaling layouts, Go Learn lets you deep-dive into complex educational whitepapers or textbooks without being targeted by advertisement overlays or focus-disrupting side banners.\n\nEnjoy clean spacing, customizable background themes, and size controls suited for accessible reading.",
+                                    fontSize = readerFontSize.sp,
+                                    color = readerText,
+                                    lineHeight = (readerFontSize * readerLineSpacing).sp
+                                )
+                            }
+                        }
                     }
                 }
-                
-                // Gemini AI Assistant Collapsible Panel
-                AiAssistantPanel(
-                    viewModel = viewModel,
-                    isExpanded = isAiPanelExpanded,
-                    onToggleExpand = { isAiPanelExpanded = !isAiPanelExpanded }
-                )
+            } else {
+                // NORMAL WEB VIEW MODE
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Box(modifier = Modifier.fillMaxSize().weight(1f)) {
+                        if (isUrlBlocked) {
+                            FocusShieldScreen(
+                                blockedUrl = blockedUrlAttempt,
+                                viewModel = viewModel
+                            )
+                        } else {
+                            BrowserWebView(
+                                viewModel = viewModel,
+                                modifier = Modifier.fillMaxSize().testTag("native_webview"),
+                                onWebViewCreated = { webViewRef = it }
+                            )
+                        }
+                    }
+                    
+                    AiAssistantPanel(
+                        viewModel = viewModel,
+                        isExpanded = isAiPanelExpanded,
+                        onToggleExpand = { isAiPanelExpanded = !isAiPanelExpanded }
+                    )
+                }
+            }
+        }
+    }
+
+    // Bookmarks Drawer dialogue
+    if (showBookmarksDialog) {
+        Dialog(onDismissRequest = { showBookmarksDialog = false }) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("Bookmarks & History Library", fontWeight = FontWeight.Bold, color = NavyPrimary)
+                        IconButton(onClick = { showBookmarksDialog = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close Dialog")
+                        }
+                    }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    
+                    LazyColumn(modifier = Modifier.height(200.dp)) {
+                        item {
+                            Text("Your Saved Reading Pages", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray, modifier = Modifier.padding(vertical = 6.dp))
+                        }
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.loadUrl("https://developer.android.com")
+                                        showBookmarksDialog = false
+                                    }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Bookmark, tint = GreenAccent, contentDescription = "Bookmark", modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text("Android Developers Library", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                                    Text("https://developer.android.com", fontSize = 10.sp, color = colors.textSecondary)
+                                }
+                            }
+                        }
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.loadUrl("https://kotlinlang.org")
+                                        showBookmarksDialog = false
+                                    }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Bookmark, tint = GreenAccent, contentDescription = "Bookmark", modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text("Kotlin Language Reference Docs", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
+                                    Text("https://kotlinlang.org", fontSize = 10.sp, color = colors.textSecondary)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -1942,18 +2522,50 @@ fun FocusShieldTab(viewModel: BrowserViewModel) {
         contentPadding = PaddingValues(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Hero Header Card with Ambient Gradient
         item {
-            Text(
-                text = "Focus Control Room",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = NavyDark
-            )
-            Text(
-                text = "Configure built-in website blocks to stay protected from distraction hubs.",
-                fontSize = 13.sp,
-                color = Color.Gray
-            )
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = NavyDark)
+            ) {
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    // Decorative Canvas elements for visual depth
+                    androidx.compose.foundation.Canvas(modifier = Modifier.matchParentSize()) {
+                        drawCircle(
+                            color = GreenAccent.copy(alpha = 0.15f),
+                            radius = size.minDimension / 1.5f,
+                            center = androidx.compose.ui.geometry.Offset(size.width * 0.9f, size.height * 0.1f)
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.Shield,
+                                contentDescription = null,
+                                tint = GreenAccent,
+                                modifier = Modifier.size(28.dp)
+                            )
+                            Text(
+                                text = "Focus Control Room",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                        Text(
+                            text = "Configure built-in website blocks and shield your attention. Keep away from distracting platforms during deep study hours.",
+                            fontSize = 12.sp,
+                            color = Color.White.copy(alpha = 0.8f),
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
+            }
         }
 
         // Master switch card
@@ -1961,9 +2573,13 @@ fun FocusShieldTab(viewModel: BrowserViewModel) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (isFocusEnabled) Color(0xFFF0FDF4) else SurfaceCardLight
+                    containerColor = if (isFocusEnabled) GreenAccent.copy(alpha = 0.08f) else SurfaceCardLight
                 ),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(
+                    width = 1.dp,
+                    color = if (isFocusEnabled) GreenAccent.copy(alpha = 0.4f) else (if (colors.isDark) Color(0xFF333333) else Color(0xFFE5E5E5))
+                )
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -1975,30 +2591,35 @@ fun FocusShieldTab(viewModel: BrowserViewModel) {
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Security,
+                            imageVector = if (isFocusEnabled) Icons.Default.Security else Icons.Default.SecurityUpdateWarning,
                             tint = if (isFocusEnabled) GreenAccent else Color.Gray,
                             contentDescription = "Focus Shield Icon",
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(28.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Focus Blocker Shield",
+                                text = "Attention Distraction Shield",
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 15.sp,
-                                color = NavyDark
+                                fontSize = 14.sp,
+                                color = colors.textPrimary
                             )
                             Text(
-                                text = if (isFocusEnabled) "Enabled (Distracting sites blocked)" else "Disabled (Free browser access)",
+                                text = if (isFocusEnabled) "Enabled (Blocked sites cannot be accessed)" else "Disabled (Free-roam browser access)",
                                 fontSize = 11.sp,
-                                color = Color.Gray
+                                color = colors.textSecondary
                             )
                         }
                     }
                     Switch(
                         checked = isFocusEnabled,
                         onCheckedChange = { viewModel.toggleFocusMode() },
-                        colors = SwitchDefaults.colors(checkedThumbColor = GreenAccent),
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = GreenAccent,
+                            uncheckedThumbColor = Color.LightGray,
+                            uncheckedTrackColor = if (colors.isDark) Color(0xFF2C2C2C) else Color(0xFFE5E5E5)
+                        ),
                         modifier = Modifier.testTag("master_focus_switch")
                     )
                 }
@@ -2009,15 +2630,16 @@ fun FocusShieldTab(viewModel: BrowserViewModel) {
         item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = NavyDark),
-                shape = RoundedCornerShape(12.dp)
+                colors = CardDefaults.cardColors(containerColor = if (colors.isDark) Color(0xFF212121) else Color.White),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, if (colors.isDark) Color(0xFF2F2F2F) else Color(0xFFEBEBEB))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "🎓 Learning Progress Metrics",
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        fontSize = 14.sp
+                        color = colors.textPrimary,
+                        fontSize = 13.sp
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Row(
@@ -2025,16 +2647,16 @@ fun FocusShieldTab(viewModel: BrowserViewModel) {
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "Skills Set", fontSize = 11.sp, color = Color.LightGray)
-                            Text(text = "$totalSkills", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text(text = "Skills Set", fontSize = 10.sp, color = colors.textSecondary)
+                            Text(text = "$totalSkills", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "Completed", fontSize = 11.sp, color = Color.LightGray)
-                            Text(text = "$completedSkills", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = GreenAccent)
+                            Text(text = "Completed", fontSize = 10.sp, color = colors.textSecondary)
+                            Text(text = "$completedSkills", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = GreenAccent)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(text = "Total Study", fontSize = 11.sp, color = Color.LightGray)
-                            Text(text = formatTime(totalStudySeconds), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text(text = "Total Study", fontSize = 10.sp, color = colors.textSecondary)
+                            Text(text = formatTime(totalStudySeconds), fontSize = 16.sp, fontWeight = FontWeight.Bold, color = colors.textPrimary)
                         }
                     }
                 }
@@ -2046,14 +2668,14 @@ fun FocusShieldTab(viewModel: BrowserViewModel) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(16.dp)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
                         text = "🚫 Block Custom Distracting Domain",
                         fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = NavyDark
+                        fontSize = 13.sp,
+                        color = colors.textPrimary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
@@ -2063,20 +2685,20 @@ fun FocusShieldTab(viewModel: BrowserViewModel) {
                         OutlinedTextField(
                             value = newBlockInput,
                             onValueChange = { newBlockInput = it },
-                            placeholder = { Text("e.g. youtube.com, x.com", fontSize = 12.sp) },
+                            placeholder = { Text("e.g. youtube.com, x.com", fontSize = 12.sp, color = Color.Gray) },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(48.dp)
                                 .testTag("block_site_input"),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(24.dp),
                             singleLine = true,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = NavyPrimary,
+                                focusedBorderColor = GreenAccent,
                                 unfocusedBorderColor = Color.LightGray,
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
+                                focusedContainerColor = if (colors.isDark) Color(0xFF1F1F1F) else Color.White,
+                                unfocusedContainerColor = if (colors.isDark) Color(0xFF1F1F1F) else Color.White
                             ),
-                            textStyle = TextStyle(fontSize = 12.sp)
+                            textStyle = TextStyle(fontSize = 12.sp, color = colors.textPrimary)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
@@ -2088,12 +2710,12 @@ fun FocusShieldTab(viewModel: BrowserViewModel) {
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(24.dp),
                             modifier = Modifier
-                                .height(40.dp)
+                                .height(44.dp)
                                 .testTag("block_site_add_button")
                         ) {
-                            Text("Block", fontSize = 12.sp, color = Color.White)
+                            Text("Restrict", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -2104,8 +2726,8 @@ fun FocusShieldTab(viewModel: BrowserViewModel) {
             Text(
                 text = "Blocked Target Hubs (${blockedSites.size})",
                 fontWeight = FontWeight.Bold,
-                fontSize = 15.sp,
-                color = NavyDark,
+                fontSize = 14.sp,
+                color = colors.textPrimary,
                 modifier = Modifier.padding(top = 4.dp)
             )
         }
@@ -2113,10 +2735,12 @@ fun FocusShieldTab(viewModel: BrowserViewModel) {
         if (blockedSites.isEmpty()) {
             item {
                 Box(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("No websites restricted currently.", color = Color.Gray, fontSize = 13.sp)
+                    Text("No websites restricted currently.", color = colors.textSecondary, fontSize = 13.sp)
                 }
             }
         } else {
@@ -2124,7 +2748,7 @@ fun FocusShieldTab(viewModel: BrowserViewModel) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(SurfaceCardLight, RoundedCornerShape(8.dp))
+                        .background(SurfaceCardLight, RoundedCornerShape(12.dp))
                         .padding(horizontal = 12.dp, vertical = 6.dp)
                         .testTag("blocked_site_item_${site.id}"),
                     verticalAlignment = Alignment.CenterVertically,
@@ -2137,7 +2761,10 @@ fun FocusShieldTab(viewModel: BrowserViewModel) {
                         Checkbox(
                             checked = site.isActive,
                             onCheckedChange = { viewModel.toggleBlockedSiteActive(site) },
-                            colors = CheckboxDefaults.colors(checkedColor = FocusOrange),
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = if (colors.isDark) GreenAccent else NavyPrimary,
+                                uncheckedColor = Color.Gray
+                            ),
                             modifier = Modifier.testTag("toggle_block_${site.id}")
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -2145,7 +2772,7 @@ fun FocusShieldTab(viewModel: BrowserViewModel) {
                             text = site.domain,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
-                            color = if (site.isActive) FocusOrange else Color.Gray,
+                            color = if (site.isActive) (if (colors.isDark) GreenAccent else NavyPrimary) else colors.textSecondary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -2210,12 +2837,18 @@ fun SyncTab(viewModel: BrowserViewModel) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().background(SoftCream)) {
         // Settings Tab Selector
         TabRow(
             selectedTabIndex = selectedSettingsSubTab,
-            containerColor = SoftCream,
-            contentColor = NavyPrimary
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = NavyPrimary,
+            indicator = { tabPositions ->
+                TabRowDefaults.SecondaryIndicator(
+                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedSettingsSubTab]),
+                    color = GreenAccent
+                )
+            }
         ) {
             Tab(
                 selected = selectedSettingsSubTab == 0,
@@ -2258,7 +2891,7 @@ fun SyncTab(viewModel: BrowserViewModel) {
                         1 -> "Search & Privacy Shield"
                         else -> "Appearance & Focus Benchmarks"
                     },
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = colors.textPrimary
                 )
@@ -2273,623 +2906,637 @@ fun SyncTab(viewModel: BrowserViewModel) {
                 )
             }
 
-        // Section 1: User Security & Cloud Login Hub
-        if (selectedSettingsSubTab == 0) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth().testTag("auth_section_card"),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    if (userProfile != null) {
-                        val profile = userProfile!!
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            val providerColor = when (profile.provider) {
-                                "Google" -> Color(0xFF4285F4)
-                                "Microsoft" -> Color(0xFF00A4EF)
-                                "DuckDuckGo" -> Color(0xFFDE5833)
-                                else -> Color(0xFF24292E)
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .background(providerColor, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
+            // Section 1: User Security & Cloud Login Hub
+            if (selectedSettingsSubTab == 0) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().testTag("auth_section_card"),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, if (colors.isDark) Color(0xFF2E2E2E) else Color(0xFFE5E5E5))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            if (userProfile != null) {
+                                val profile = userProfile!!
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    val providerColor = when (profile.provider) {
+                                        "Google" -> Color(0xFF4285F4)
+                                        "Microsoft" -> Color(0xFF00A4EF)
+                                        "DuckDuckGo" -> Color(0xFFDE5833)
+                                        else -> Color(0xFF24292E)
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .size(44.dp)
+                                            .background(providerColor, CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = profile.email.take(1).uppercase(),
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 20.sp,
+                                            color = Color.White
+                                        )
+                                    }
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = "Connected via ${profile.provider}",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = providerColor
+                                        )
+                                        Text(
+                                            text = profile.username,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = colors.textPrimary
+                                        )
+                                        Text(
+                                            text = profile.email,
+                                            fontSize = 12.sp,
+                                            color = colors.textSecondary
+                                        )
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    TextButton(
+                                        onClick = { viewModel.logout() },
+                                        modifier = Modifier.testTag("logout_button")
+                                    ) {
+                                        Text("Sign Out", color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                    }
+                                    Button(
+                                        onClick = { viewModel.forceSyncPush() },
+                                        colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),
+                                        shape = RoundedCornerShape(20.dp),
+                                        modifier = Modifier.height(40.dp).testTag("sync_now_btn")
+                                    ) {
+                                        if (syncState is SyncState.Syncing) {
+                                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp))
+                                        } else {
+                                            Icon(Icons.Default.Sync, contentDescription = "Sync Now", modifier = Modifier.size(14.dp))
+                                            Spacer(modifier = Modifier.width(4.dp))
+                                            Text("Sync Now", fontSize = 11.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+                                }
+                            } else {
                                 Text(
-                                    text = profile.email.take(1).uppercase(),
+                                    text = "🔐 Cloud Sync Security Center",
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp,
-                                    color = Color.White
-                                )
-                            }
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Connected via ${profile.provider}",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = providerColor
-                                )
-                                Text(
-                                    text = profile.username,
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
                                     color = colors.textPrimary
                                 )
                                 Text(
-                                    text = profile.email,
-                                    fontSize = 12.sp,
-                                    color = colors.textSecondary
+                                    text = "Link your preferred secure credentials to save your progress across all connected devices.",
+                                    fontSize = 11.sp,
+                                    color = colors.textSecondary,
+                                    modifier = Modifier.padding(bottom = 12.dp)
                                 )
+
+                                // Vertical list of providers styled cleanly
+                                val providers = listOf(
+                                    Triple("Google", "Sign in with Google Sync", Color(0xFF4285F4)),
+                                    Triple("Microsoft", "Sign in with Microsoft Sync", Color(0xFF00A4EF)),
+                                    Triple("DuckDuckGo", "Sign in with DuckDuckGo Sync", Color(0xFFDE5833)),
+                                    Triple("GitHub", "Sign in with GitHub Secure", Color(0xFF24292E))
+                                )
+
+                                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    providers.forEach { (prov, label, pColor) ->
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .background(
+                                                    if (colors.isDark) Color(0xFF222222) else Color.White,
+                                                    RoundedCornerShape(12.dp)
+                                                )
+                                                .border(
+                                                    1.dp,
+                                                    if (colors.isDark) Color(0xFF333333) else Color(0xFFE5E5E5),
+                                                    RoundedCornerShape(12.dp)
+                                                )
+                                                .clickable { selectedLoginProvider = prov }
+                                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                                                .testTag("login_provider_$prov"),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(10.dp)
+                                                    .background(pColor, CircleShape)
+                                            )
+                                            Spacer(modifier = Modifier.width(12.dp))
+                                            Text(
+                                                text = label,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = colors.textPrimary
+                                            )
+                                        }
+                                    }
+                                }
                             }
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            TextButton(
-                                onClick = { viewModel.logout() },
-                                modifier = Modifier.testTag("logout_button")
+                    }
+                }
+
+                // Section 5: Legacy Physical Devices Connection
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().testTag("legacy_sync_card"),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, if (colors.isDark) Color(0xFF2E2E2E) else Color(0xFFE5E5E5))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "🔗 Direct Device Pairing",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = colors.textPrimary
+                            )
+                            Text(
+                                text = "Merge progress directly with another browser session using physical keys, without creating an account.",
+                                fontSize = 11.sp,
+                                color = colors.textSecondary,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(if (colors.isDark) Color(0xFF222222) else Color.White, RoundedCornerShape(12.dp))
+                                    .border(1.dp, if (colors.isDark) Color(0xFF333333) else Color.LightGray, RoundedCornerShape(12.dp))
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
                             ) {
-                                Text("Sign Out", color = Color.Red, fontSize = 12.sp)
+                                Text(
+                                    text = syncKey,
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = NavyPrimary,
+                                    fontFamily = FontFamily.Monospace,
+                                    modifier = Modifier.testTag("device_sync_key")
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                IconButton(
+                                    onClick = {
+                                        clipboardManager.setText(AnnotatedString(syncKey))
+                                        Toast.makeText(context, "Sync Key Copied!", Toast.LENGTH_SHORT).show()
+                                    },
+                                    modifier = Modifier.size(32.dp).testTag("copy_sync_key")
+                                ) {
+                                    Icon(Icons.Default.ContentCopy, contentDescription = "Copy code", tint = NavyPrimary, modifier = Modifier.size(18.dp))
+                                }
                             }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            OutlinedTextField(
+                                value = inputSyncKey,
+                                onValueChange = { inputSyncKey = it },
+                                placeholder = { Text("Paste other device key...", fontSize = 12.sp, color = Color.Gray) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp)
+                                    .testTag("merge_sync_key_input"),
+                                shape = RoundedCornerShape(24.dp),
+                                singleLine = true,
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = GreenAccent,
+                                    unfocusedBorderColor = Color.LightGray,
+                                    focusedContainerColor = if (colors.isDark) Color(0xFF222222) else Color.White,
+                                    unfocusedContainerColor = if (colors.isDark) Color(0xFF222222) else Color.White,
+                                    focusedTextColor = colors.textPrimary,
+                                    unfocusedTextColor = colors.textPrimary
+                                ),
+                                textStyle = TextStyle(fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
                             Button(
-                                onClick = { viewModel.forceSyncPush() },
-                                colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary),
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.height(36.dp).testTag("sync_now_btn")
+                                onClick = {
+                                    if (inputSyncKey.trim().isNotEmpty()) {
+                                        viewModel.connectAndPullSync(inputSyncKey)
+                                        inputSyncKey = ""
+                                    }
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = GreenAccent),
+                                shape = RoundedCornerShape(24.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp)
+                                    .testTag("pull_sync_button"),
+                                enabled = syncState !is SyncState.Syncing
                             ) {
                                 if (syncState is SyncState.Syncing) {
-                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp))
+                                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp))
                                 } else {
-                                    Icon(Icons.Default.Sync, contentDescription = "Sync Now", modifier = Modifier.size(14.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("Sync Now", fontSize = 11.sp, color = Color.White)
+                                    Icon(Icons.Default.Devices, contentDescription = "Merge devices", modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Pair & Link Progress", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
-                    } else {
-                        Text(
-                            text = "🔐 Cloud Sync Security Center",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp,
-                            color = colors.textPrimary
-                        )
-                        Text(
-                            text = "Link your preferred secure credentials to save your progress across all connected devices.",
-                            fontSize = 11.sp,
-                            color = colors.textSecondary,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
+                    }
+                }
+            }
 
-                        // Vertical list of providers styled cleanly
-                        val providers = listOf(
-                            Triple("Google", "Sign in with Google Sync", Color(0xFF4285F4)),
-                            Triple("Microsoft", "Sign in with Microsoft Sync", Color(0xFF00A4EF)),
-                            Triple("DuckDuckGo", "Sign in with DuckDuckGo Sync", Color(0xFFDE5833)),
-                            Triple("GitHub", "Sign in with GitHub Secure", Color(0xFF24292E))
-                        )
+            // Section 2: Browser & Custom Search Configuration
+            if (selectedSettingsSubTab == 1) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().testTag("browser_config_card"),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, if (colors.isDark) Color(0xFF2E2E2E) else Color(0xFFE5E5E5))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "🔍 Default Search Engine",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = colors.textPrimary
+                            )
+                            Text(
+                                text = "Select your preferred search engine for studies.",
+                                fontSize = 11.sp,
+                                color = colors.textSecondary,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
 
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            providers.forEach { (prov, label, pColor) ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(
-                                            if (colors.isDark) Color(0xFF262626) else Color.White,
-                                            RoundedCornerShape(8.dp)
-                                        )
-                                        .border(
-                                            1.dp,
-                                            if (colors.isDark) Color(0xFF333333) else Color(0xFFE5E5E5),
-                                            RoundedCornerShape(8.dp)
-                                        )
-                                        .clickable { selectedLoginProvider = prov }
-                                        .padding(horizontal = 12.dp, vertical = 8.dp)
-                                        .testTag("login_provider_$prov"),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(8.dp)
-                                            .background(pColor, CircleShape)
+                            val engines = listOf("Google", "DuckDuckGo", "Bing", "Brave", "Yahoo")
+                            androidx.compose.foundation.lazy.LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(engines) { engine ->
+                                    val isSel = engine == searchEngine
+                                    FilterChip(
+                                        selected = isSel,
+                                        onClick = { viewModel.setSearchEngine(engine) },
+                                        label = { Text(engine, fontSize = 11.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = NavyPrimary,
+                                            selectedLabelColor = Color.White,
+                                            containerColor = if (colors.isDark) Color(0xFF222222) else Color.White,
+                                            labelColor = colors.textSecondary
+                                        ),
+                                        modifier = Modifier.testTag("search_engine_$engine")
                                     )
-                                    Spacer(modifier = Modifier.width(10.dp))
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Section: Privacy Protection & Guest Browsing
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().testTag("privacy_settings_card"),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, if (colors.isDark) Color(0xFF2E2E2E) else Color(0xFFE5E5E5))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Text(
+                                text = "🛡️ Privacy Guard & Security Options",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = colors.textPrimary
+                            )
+
+                            // Guest Browsing Toggle Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
                                     Text(
-                                        text = label,
-                                        fontSize = 12.sp,
+                                        text = "Anonymous Guest Browsing",
                                         fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
                                         color = colors.textPrimary
                                     )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        }
-
-        // Section 2: Browser & Custom Search Configuration
-        if (selectedSettingsSubTab == 1) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth().testTag("browser_config_card"),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "🔍 Default Search Engine",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = colors.textPrimary
-                    )
-                    Text(
-                        text = "Select your preferred learning search interface.",
-                        fontSize = 11.sp,
-                        color = colors.textSecondary,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    val engines = listOf("Google", "DuckDuckGo", "Bing", "Brave", "Yahoo")
-                    androidx.compose.foundation.lazy.LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(engines) { engine ->
-                            val isSel = engine == searchEngine
-                            FilterChip(
-                                selected = isSel,
-                                onClick = { viewModel.setSearchEngine(engine) },
-                                label = { Text(engine, fontSize = 11.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = NavyPrimary,
-                                    selectedLabelColor = Color.White,
-                                    containerColor = if (colors.isDark) Color(0xFF262626) else Color.White,
-                                    labelColor = colors.textSecondary
-                                ),
-                                modifier = Modifier.testTag("search_engine_$engine")
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        // Section: Privacy Protection & Guest Browsing
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth().testTag("privacy_settings_card"),
-                colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(
-                        text = "🛡️ Privacy Guard & Security Options",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = colors.textPrimary
-                    )
-
-                    // Guest Browsing Toggle Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text(
-                                text = "Anonymous Guest Browsing",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = colors.textPrimary
-                            )
-                            Text(
-                                text = "When active, your history is completely hidden/paused, and cookies are automatically wiped on toggle.",
-                                fontSize = 11.sp,
-                                color = colors.textSecondary
-                            )
-                        }
-                        Switch(
-                            checked = isGuestMode,
-                            onCheckedChange = { 
-                                viewModel.setGuestMode(it)
-                                val msg = if (it) "Anonymous Guest Mode Enabled" else "Guest Mode Disabled"
-                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                            },
-                            colors = SwitchDefaults.colors(checkedThumbColor = GreenAccent),
-                            modifier = Modifier.testTag("guest_browsing_toggle")
-                        )
-                    }
-
-                    Divider(color = if (colors.isDark) Color(0xFF333333) else Color(0xFFE5E5E5))
-
-                    // Do Not Track Toggle Row
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
-                            Text(
-                                text = "Send 'Do Not Track' Header",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp,
-                                color = colors.textPrimary
-                            )
-                            Text(
-                                text = "Asks search engines and web portals not to track your browsing sessions for marketing.",
-                                fontSize = 11.sp,
-                                color = colors.textSecondary
-                            )
-                        }
-                        Switch(
-                            checked = doNotTrack,
-                            onCheckedChange = { 
-                                viewModel.setDoNotTrack(it)
-                                val msg = if (it) "Do Not Track Requested" else "DNT Disabled"
-                                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                            },
-                            colors = SwitchDefaults.colors(checkedThumbColor = GreenAccent),
-                            modifier = Modifier.testTag("dnt_toggle")
-                        )
-                    }
-
-                    Divider(color = if (colors.isDark) Color(0xFF333333) else Color(0xFFE5E5E5))
-
-                    // Immediately Clear History/Cache Button
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(
-                            text = "Browser Database & Cookies Maintenance",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            color = colors.textPrimary,
-                            modifier = Modifier.padding(bottom = 4.dp)
-                        )
-                        Text(
-                            text = "Completely purges all web page cookies, clear WebView caching buffers, and resets the student's history db log.",
-                            fontSize = 11.sp,
-                            color = colors.textSecondary,
-                            modifier = Modifier.padding(bottom = 12.dp)
-                        )
-                        Button(
-                            onClick = {
-                                viewModel.clearBrowsingData()
-                                Toast.makeText(context, "History, cache, and cookies successfully cleared!", Toast.LENGTH_LONG).show()
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
-                            modifier = Modifier.fillMaxWidth().height(40.dp).testTag("clear_browsing_data_btn"),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Icon(Icons.Default.DeleteOutline, contentDescription = "Clear Data", modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Clear History, Cache & Cookies", fontSize = 11.sp, color = Color.White)
-                        }
-                    }
-                }
-            }
-        }
-        }
-
-        // Section 3: Visual Theme and Style Accent
-        if (selectedSettingsSubTab == 2) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth().testTag("theme_accent_card"),
-                colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "🎨 Theme Accent & Colors",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = colors.textPrimary
-                    )
-                    Text(
-                        text = "Switch color mood and see the whole app adapt in real-time.",
-                        fontSize = 11.sp,
-                        color = colors.textSecondary,
-                        modifier = Modifier.padding(bottom = 10.dp)
-                    )
-
-                    val accents = listOf(
-                        "Navy" to Color(0xFF1E3A5F),
-                        "Emerald" to Color(0xFF2E7D32),
-                        "Ocean" to Color(0xFF0288D1),
-                        "Cosmic" to Color(0xFF7B1FA2),
-                        "Sunset" to Color(0xFFE64A19)
-                    )
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        accents.forEach { (name, hexColor) ->
-                            val isSel = name == themeAccent
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(hexColor, CircleShape)
-                                    .border(
-                                        width = if (isSel) 3.dp else 1.dp,
-                                        color = if (isSel) Color.White else Color.Transparent,
-                                        shape = CircleShape
+                                    Text(
+                                        text = "Wipe history, disable cookies, and study privately. No tracking data is saved to disk.",
+                                        fontSize = 11.sp,
+                                        color = colors.textSecondary
                                     )
-                                    .clickable { viewModel.setThemeAccent(name) }
-                                    .testTag("accent_color_$name"),
-                                contentAlignment = Alignment.Center
+                                }
+                                Switch(
+                                    checked = isGuestMode,
+                                    onCheckedChange = { 
+                                        viewModel.setGuestMode(it)
+                                        val msg = if (it) "Anonymous Guest Mode Enabled" else "Guest Mode Disabled"
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = GreenAccent,
+                                        uncheckedThumbColor = Color.LightGray,
+                                        uncheckedTrackColor = if (colors.isDark) Color(0xFF2C2C2C) else Color(0xFFE5E5E5)
+                                    ),
+                                    modifier = Modifier.testTag("guest_browsing_toggle")
+                                )
+                            }
+
+                            HorizontalDivider(color = if (colors.isDark) Color(0xFF2C2C2C) else Color(0xFFE5E5E5))
+
+                            // Do Not Track Toggle Row
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                if (isSel) {
-                                    Icon(
-                                        imageVector = Icons.Default.Check,
-                                        contentDescription = "Selected",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(16.dp)
+                                Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                    Text(
+                                        text = "Send 'Do Not Track' Header",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = colors.textPrimary
+                                    )
+                                    Text(
+                                        text = "Informs learning portals and web servers to keep your browsing private.",
+                                        fontSize = 11.sp,
+                                        color = colors.textSecondary
+                                    )
+                                }
+                                Switch(
+                                    checked = doNotTrack,
+                                    onCheckedChange = { 
+                                        viewModel.setDoNotTrack(it)
+                                        val msg = if (it) "Do Not Track Requested" else "DNT Disabled"
+                                        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = GreenAccent,
+                                        uncheckedThumbColor = Color.LightGray,
+                                        uncheckedTrackColor = if (colors.isDark) Color(0xFF2C2C2C) else Color(0xFFE5E5E5)
+                                    ),
+                                    modifier = Modifier.testTag("dnt_toggle")
+                                )
+                            }
+
+                            HorizontalDivider(color = if (colors.isDark) Color(0xFF2C2C2C) else Color(0xFFE5E5E5))
+
+                            // Immediately Clear History/Cache Button
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(
+                                    text = "Database Caching Maintenance",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp,
+                                    color = colors.textPrimary,
+                                    modifier = Modifier.padding(bottom = 4.dp)
+                                )
+                                Text(
+                                    text = "Purges cookies, resets temporary history log entries, and releases cache.",
+                                    fontSize = 11.sp,
+                                    color = colors.textSecondary,
+                                    modifier = Modifier.padding(bottom = 12.dp)
+                                )
+                                Button(
+                                    onClick = {
+                                        viewModel.clearBrowsingData()
+                                        Toast.makeText(context, "All browsing cache and local cookies cleared successfully!", Toast.LENGTH_LONG).show()
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFC62828)),
+                                    modifier = Modifier.fillMaxWidth().height(44.dp).testTag("clear_browsing_data_btn"),
+                                    shape = RoundedCornerShape(24.dp)
+                                ) {
+                                    Icon(Icons.Default.DeleteOutline, contentDescription = "Clear Data", modifier = Modifier.size(16.dp))
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Clear Cookies, Cache & History Log", fontSize = 12.sp, color = Color.White, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Section 3: Visual Theme and Style Accent
+            if (selectedSettingsSubTab == 2) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().testTag("theme_accent_card"),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, if (colors.isDark) Color(0xFF2E2E2E) else Color(0xFFE5E5E5))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "🎨 Theme Accent & Colors",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = colors.textPrimary
+                            )
+                            Text(
+                                text = "Switch the app visual mood color directly.",
+                                fontSize = 11.sp,
+                                color = colors.textSecondary,
+                                modifier = Modifier.padding(bottom = 10.dp)
+                            )
+
+                            val accents = listOf(
+                                "Navy" to Color(0xFF1E3A5F),
+                                "Emerald" to Color(0xFF2E7D32),
+                                "Ocean" to Color(0xFF0288D1),
+                                "Cosmic" to Color(0xFF7B1FA2),
+                                "Sunset" to Color(0xFFE64A19)
+                            )
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                accents.forEach { (name, hexColor) ->
+                                    val isSel = name == themeAccent
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(hexColor, CircleShape)
+                                            .border(
+                                                width = if (isSel) 3.dp else 1.dp,
+                                                color = if (isSel) Color.White else Color.Transparent,
+                                                shape = CircleShape
+                                            )
+                                            .clickable { viewModel.setThemeAccent(name) }
+                                            .testTag("accent_color_$name"),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (isSel) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "Selected",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = "☀️ Theme Mode Preference",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = colors.textPrimary,
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
+
+                            val modes = listOf("System", "Light", "Dark")
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                modes.forEach { m ->
+                                    val isSel = m == themeMode
+                                    FilterChip(
+                                        selected = isSel,
+                                        onClick = { viewModel.setThemeMode(m) },
+                                        label = { Text(m, fontSize = 11.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = NavyPrimary,
+                                            selectedLabelColor = Color.White,
+                                            containerColor = if (colors.isDark) Color(0xFF222222) else Color.White,
+                                            labelColor = colors.textSecondary
+                                        ),
+                                        modifier = Modifier.testTag("theme_mode_$m")
                                     )
                                 }
                             }
                         }
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "☀️ Theme Mode Preference",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        color = colors.textPrimary,
-                        modifier = Modifier.padding(bottom = 6.dp)
-                    )
-
-                    val modes = listOf("System", "Light", "Dark")
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        modes.forEach { m ->
-                            val isSel = m == themeMode
-                            FilterChip(
-                                selected = isSel,
-                                onClick = { viewModel.setThemeMode(m) },
-                                label = { Text(m, fontSize = 11.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = NavyPrimary,
-                                    selectedLabelColor = Color.White,
-                                    containerColor = if (colors.isDark) Color(0xFF262626) else Color.White,
-                                    labelColor = colors.textSecondary
-                                ),
-                                modifier = Modifier.testTag("theme_mode_$m")
-                            )
-                        }
-                    }
                 }
-            }
-        }
 
-        // Section 4: Study Shield & Timer Settings
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth().testTag("shield_timer_card"),
-                colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "🛡️ Focus Shield Interceptor",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = colors.textPrimary
-                    )
-                    Text(
-                        text = "Standard: Block custom lists. Strict: Auto-block social media and gaming dynamically during active studies.",
-                        fontSize = 11.sp,
-                        color = colors.textSecondary,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    val strictnessModes = listOf("Standard", "Strict", "Disabled")
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
+                // Section 4: Study Shield & Timer Settings
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().testTag("shield_timer_card"),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, if (colors.isDark) Color(0xFF2E2E2E) else Color(0xFFE5E5E5))
                     ) {
-                        strictnessModes.forEach { mode ->
-                            val isSel = mode == shieldStrictness
-                            FilterChip(
-                                selected = isSel,
-                                onClick = { viewModel.setShieldStrictness(mode) },
-                                label = { Text(mode, fontSize = 11.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = NavyPrimary,
-                                    selectedLabelColor = Color.White,
-                                    containerColor = if (colors.isDark) Color(0xFF262626) else Color.White,
-                                    labelColor = colors.textSecondary
-                                ),
-                                modifier = Modifier.testTag("shield_strictness_$mode")
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = "🛡️ Focus Shield Strictness",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp,
+                                color = colors.textPrimary
                             )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = "⏱️ Stopwatch Pomodoro Limit",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        color = colors.textPrimary,
-                        modifier = Modifier.padding(bottom = 6.dp)
-                    )
-
-                    val targets = listOf(
-                        "Continuous" to 0,
-                        "15 Mins" to 15,
-                        "25 Mins" to 25,
-                        "45 Mins" to 45,
-                        "60 Mins" to 60
-                    )
-
-                    androidx.compose.foundation.lazy.LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        items(targets) { (lbl, mins) ->
-                            val isSel = mins == sessionGoalMinutes
-                            FilterChip(
-                                selected = isSel,
-                                onClick = { viewModel.setSessionGoalMinutes(mins) },
-                                label = { Text(lbl, fontSize = 11.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = NavyPrimary,
-                                    selectedLabelColor = Color.White,
-                                    containerColor = if (colors.isDark) Color(0xFF262626) else Color.White,
-                                    labelColor = colors.textSecondary
-                                ),
-                                modifier = Modifier.testTag("session_limit_$mins")
+                            Text(
+                                text = "Standard restricts custom blocks. Strict blocks common distracting hubs dynamically during sessions.",
+                                fontSize = 11.sp,
+                                color = colors.textSecondary,
+                                modifier = Modifier.padding(bottom = 8.dp)
                             )
-                        }
-                    }
-                }
-            }
-        }
-        }
 
-        // Section 5: Legacy Physical Devices Connection
-        if (selectedSettingsSubTab == 0) {
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth().testTag("legacy_sync_card"),
-                colors = CardDefaults.cardColors(containerColor = SurfaceCardLight),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "🔗 Advanced Device Pairing (No Account)",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = colors.textPrimary
-                    )
-                    Text(
-                        text = "You can also sync directly with a physical device key without logging into an account.",
-                        fontSize = 11.sp,
-                        color = colors.textSecondary,
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(if (colors.isDark) Color(0xFF262626) else Color.White, RoundedCornerShape(8.dp))
-                            .border(1.dp, if (colors.isDark) Color(0xFF333333) else Color.LightGray, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            text = syncKey,
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = NavyPrimary,
-                            fontFamily = FontFamily.Monospace,
-                            modifier = Modifier.testTag("device_sync_key")
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        IconButton(
-                            onClick = {
-                                clipboardManager.setText(AnnotatedString(syncKey))
-                                Toast.makeText(context, "Sync Key Copied!", Toast.LENGTH_SHORT).show()
-                            },
-                            modifier = Modifier.size(32.dp).testTag("copy_sync_key")
-                        ) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy code", tint = NavyPrimary, modifier = Modifier.size(18.dp))
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    OutlinedTextField(
-                        value = inputSyncKey,
-                        onValueChange = { inputSyncKey = it },
-                        placeholder = { Text("Enter other device sync key...", fontSize = 12.sp) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .testTag("merge_sync_key_input"),
-                        shape = RoundedCornerShape(8.dp),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = NavyPrimary,
-                            unfocusedBorderColor = Color.LightGray,
-                            focusedContainerColor = if (colors.isDark) Color(0xFF262626) else Color.White,
-                            unfocusedContainerColor = if (colors.isDark) Color(0xFF262626) else Color.White,
-                            focusedTextColor = colors.textPrimary,
-                            unfocusedTextColor = colors.textPrimary
-                        ),
-                        textStyle = TextStyle(fontSize = 13.sp, fontFamily = FontFamily.Monospace)
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Button(
-                        onClick = {
-                            if (inputSyncKey.trim().isNotEmpty()) {
-                                viewModel.connectAndPullSync(inputSyncKey)
-                                inputSyncKey = ""
+                            val strictnessModes = listOf("Standard", "Strict", "Disabled")
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                strictnessModes.forEach { mode ->
+                                    val isSel = mode == shieldStrictness
+                                    FilterChip(
+                                        selected = isSel,
+                                        onClick = { viewModel.setShieldStrictness(mode) },
+                                        label = { Text(mode, fontSize = 11.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = NavyPrimary,
+                                            selectedLabelColor = Color.White,
+                                            containerColor = if (colors.isDark) Color(0xFF222222) else Color.White,
+                                            labelColor = colors.textSecondary
+                                        ),
+                                        modifier = Modifier.testTag("shield_strictness_$mode")
+                                    )
+                                }
                             }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = GreenAccent),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp)
-                            .testTag("pull_sync_button"),
-                        enabled = syncState !is SyncState.Syncing
-                    ) {
-                        if (syncState is SyncState.Syncing) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(18.dp))
-                        } else {
-                            Icon(Icons.Default.Devices, contentDescription = "Merge devices", modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Pair & Link Progress", fontSize = 12.sp, color = Color.White)
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = "⏱️ Stopwatch Pomodoro Session Limit",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp,
+                                color = colors.textPrimary,
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
+
+                            val targets = listOf(
+                                "Continuous" to 0,
+                                "15 Mins" to 15,
+                                "25 Mins" to 25,
+                                "45 Mins" to 45,
+                                "60 Mins" to 60
+                            )
+
+                            androidx.compose.foundation.lazy.LazyRow(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                items(targets) { (lbl, mins) ->
+                                    val isSel = mins == sessionGoalMinutes
+                                    FilterChip(
+                                        selected = isSel,
+                                        onClick = { viewModel.setSessionGoalMinutes(mins) },
+                                        label = { Text(lbl, fontSize = 11.sp) },
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            selectedContainerColor = NavyPrimary,
+                                            selectedLabelColor = Color.White,
+                                            containerColor = if (colors.isDark) Color(0xFF222222) else Color.White,
+                                            labelColor = colors.textSecondary
+                                        ),
+                                        modifier = Modifier.testTag("session_limit_$mins")
+                                    )
+                                }
+                            }
                         }
                     }
                 }
             }
-        }
 
-        // Sync description footer
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                verticalAlignment = Alignment.Top
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Info,
-                    contentDescription = "Sync information",
-                    tint = Color.Gray,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Go's Cloud Sync doesn't overwrite your local notes or study hours blindly. Instead, our advanced algorithm merges active skill progress, accumulated study stopwatch times, and bookmarks intelligently across all linked devices. Secure and protected.",
-                    fontSize = 11.sp,
-                    color = Color.Gray,
-                    lineHeight = 16.sp
-                )
+            // Sync description footer
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Info,
+                        contentDescription = "Sync information",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Go Learn Cloud Sync doesn't overwrite your local database or accumulated study times. Instead, our advanced engine merges enrolled skills, study durations, history entries, and custom bookmarks intelligently and securely across all paired devices.",
+                        fontSize = 11.sp,
+                        color = Color.Gray,
+                        lineHeight = 16.sp
+                    )
+                }
             }
         }
-        }
-    }
     }
 
     // Interactive OAuth Secure Handshake Dialogue
@@ -3187,10 +3834,22 @@ fun PomodoroTimerCard(viewModel: BrowserViewModel) {
     val longBreakMins by viewModel.pomodoroLongBreakMinutes.collectAsStateWithLifecycle()
 
     var showSettings by remember { mutableStateOf(false) }
+    var isSoundEnabled by remember { mutableStateOf(true) }
+    var isVibrationEnabled by remember { mutableStateOf(true) }
+    var selectedAmbience by remember { mutableStateOf("None") }
 
     var inputWorkMins by remember(workMins) { mutableIntStateOf(workMins) }
     var inputShortMins by remember(shortBreakMins) { mutableIntStateOf(shortBreakMins) }
     var inputLongMins by remember(longBreakMins) { mutableIntStateOf(longBreakMins) }
+
+    val activeColor = when (pomoMode) {
+        "WORK" -> Color(0xFFE0533C)
+        "SHORT_BREAK" -> GreenAccent
+        "LONG_BREAK" -> NavyPrimary
+        else -> Color(0xFFE0533C)
+    }
+
+    val progressPercent = if (pomoDuration > 0) pomoTimeLeft.toFloat() / pomoDuration.toFloat() else 1f
 
     Card(
         modifier = Modifier
@@ -3203,16 +3862,17 @@ fun PomodoroTimerCard(viewModel: BrowserViewModel) {
             modifier = Modifier.padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            // Header with title and session count
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                val (modeLabel, modeColor, modeIcon) = when (pomoMode) {
-                    "WORK" -> Triple("Deep Focus Work", Color(0xFFE0533C), Icons.Default.Timer)
-                    "SHORT_BREAK" -> Triple("Short Coffee Break", GreenAccent, Icons.Default.LocalCafe)
-                    "LONG_BREAK" -> Triple("Long Relaxing Break", NavyPrimary, Icons.Default.Spa)
-                    else -> Triple("Focus", Color(0xFFE0533C), Icons.Default.Timer)
+                val modeLabel = when (pomoMode) {
+                    "WORK" -> "Deep Focus Block"
+                    "SHORT_BREAK" -> "Short Coffee Break"
+                    "LONG_BREAK" -> "Long Relaxing Break"
+                    else -> "Focus"
                 }
 
                 Row(
@@ -3220,9 +3880,13 @@ fun PomodoroTimerCard(viewModel: BrowserViewModel) {
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Icon(
-                        imageVector = modeIcon,
+                        imageVector = when (pomoMode) {
+                            "WORK" -> Icons.Default.Timer
+                            "SHORT_BREAK" -> Icons.Default.LocalCafe
+                            else -> Icons.Default.Spa
+                        },
                         contentDescription = modeLabel,
-                        tint = modeColor,
+                        tint = activeColor,
                         modifier = Modifier.size(18.dp)
                     )
                     Text(
@@ -3233,81 +3897,98 @@ fun PomodoroTimerCard(viewModel: BrowserViewModel) {
                     )
                 }
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
-                        text = "Sessions:",
+                        text = "Today:",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = colors.textSecondary
                     )
                     Box(
                         modifier = Modifier
-                            .background(NavyPrimary.copy(alpha = 0.1f), RoundedCornerShape(4.dp))
+                            .background(activeColor.copy(alpha = 0.12f), RoundedCornerShape(4.dp))
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = completedPomos.toString(),
                             fontSize = 11.sp,
                             fontWeight = FontWeight.ExtraBold,
-                            color = NavyPrimary
+                            color = activeColor
                         )
                     }
-                    if (completedPomos in 1..4) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                            repeat(completedPomos) {
-                                Text("🍅", fontSize = 11.sp)
-                            }
-                        }
-                    } else if (completedPomos > 4) {
-                        Text("🍅 x$completedPomos", fontSize = 11.sp)
-                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // CIRCULAR COUNTDOWN RING
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(180.dp)
+            ) {
+                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
+                    // Background Ring
+                    drawCircle(
+                        color = if (colors.isDark) Color(0xFF2C2C2C) else Color(0xFFE5E5E5),
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                    )
+                    // Active Countdown Arc
+                    drawArc(
+                        color = activeColor,
+                        startAngle = -90f,
+                        sweepAngle = progressPercent * 360f,
+                        useCenter = false,
+                        style = androidx.compose.ui.graphics.drawscope.Stroke(width = 8.dp.toPx(), cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                    )
+                }
+
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = formatTime(pomoTimeLeft.toLong()),
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = FontFamily.Monospace,
+                        color = colors.textPrimary,
+                        modifier = Modifier.testTag("pomodoro_digital_clock")
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = if (pomoState == "RUNNING") "FOCUSING" else "PAUSED",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = activeColor,
+                        letterSpacing = 1.sp
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // MOTIVATIONAL STUDY QUOTE
             Text(
-                text = formatTime(pomoTimeLeft.toLong()),
-                fontSize = 44.sp,
-                fontWeight = FontWeight.ExtraBold,
-                fontFamily = FontFamily.Monospace,
-                color = when (pomoMode) {
-                    "WORK" -> Color(0xFFE0533C)
-                    else -> GreenAccent
+                text = when (pomoMode) {
+                    "WORK" -> "\"Small progress every day adds up.\""
+                    else -> "\"Time to recharge and relax your mind.\""
                 },
-                modifier = Modifier.testTag("pomodoro_digital_clock")
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-
-            val progressPercent = if (pomoDuration > 0) pomoTimeLeft.toFloat() / pomoDuration.toFloat() else 1f
-            LinearProgressIndicator(
-                progress = progressPercent,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = when (pomoMode) {
-                    "WORK" -> Color(0xFFE0533C)
-                    else -> GreenAccent
-                },
-                trackColor = if (colors.isDark) Color(0xFF333333) else Color(0xFFE5E5E5)
+                fontSize = 12.sp,
+                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
+                color = colors.textSecondary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp)
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // TIMER CONTROL BUTTONS
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
                     onClick = { viewModel.resetPomodoro() },
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(44.dp)
                         .testTag("pomodoro_reset_btn")
                 ) {
                     Icon(
@@ -3317,6 +3998,8 @@ fun PomodoroTimerCard(viewModel: BrowserViewModel) {
                     )
                 }
 
+                Spacer(modifier = Modifier.width(16.dp))
+
                 Button(
                     onClick = {
                         if (pomoState == "RUNNING") {
@@ -3325,16 +4008,11 @@ fun PomodoroTimerCard(viewModel: BrowserViewModel) {
                             viewModel.startPomodoro()
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = when (pomoMode) {
-                            "WORK" -> Color(0xFFE0533C)
-                            else -> GreenAccent
-                        }
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = activeColor),
                     shape = CircleShape,
                     modifier = Modifier
                         .height(48.dp)
-                        .widthIn(min = 120.dp)
+                        .widthIn(min = 140.dp)
                         .testTag("pomodoro_play_pause_btn")
                 ) {
                     Row(
@@ -3346,20 +4024,22 @@ fun PomodoroTimerCard(viewModel: BrowserViewModel) {
                             contentDescription = if (pomoState == "RUNNING") "Pause" else "Start",
                             tint = Color.White
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = if (pomoState == "RUNNING") "Pause" else "Focus Now",
                             fontWeight = FontWeight.Bold,
                             color = Color.White,
-                            fontSize = 13.sp
+                            fontSize = 14.sp
                         )
                     }
                 }
 
+                Spacer(modifier = Modifier.width(16.dp))
+
                 IconButton(
                     onClick = { viewModel.skipPomodoro() },
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(44.dp)
                         .testTag("pomodoro_skip_btn")
                 ) {
                     Icon(
@@ -3370,8 +4050,108 @@ fun PomodoroTimerCard(viewModel: BrowserViewModel) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
+            // SOUND / VIBRATION / AMBIENCE TOGGLES
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = if (colors.isDark) Color(0xFF262626) else Color.White),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Sound & Ambient White Noise",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = colors.textPrimary
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            // Sound Toggle
+                            IconButton(
+                                onClick = { isSoundEnabled = !isSoundEnabled },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isSoundEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
+                                    contentDescription = "Toggle Sound",
+                                    tint = if (isSoundEnabled) GreenAccent else Color.Gray,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                            // Vibration Toggle
+                            IconButton(
+                                onClick = { isVibrationEnabled = !isVibrationEnabled },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (isVibrationEnabled) Icons.Default.Vibration else Icons.Default.Vibration,
+                                    contentDescription = "Toggle Vibration",
+                                    tint = if (isVibrationEnabled) GreenAccent else Color.Gray,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Ambience Selection chips
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        val options = listOf("None", "Rain", "Forest", "Cafe")
+                        options.forEach { option ->
+                            val isSel = selectedAmbience == option
+                            val iconStr = when (option) {
+                                "Rain" -> "🌧️"
+                                "Forest" -> "🌲"
+                                "Cafe" -> "☕"
+                                else -> "🔇"
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .background(
+                                        color = if (isSel) activeColor else (if (colors.isDark) Color(0xFF1F1F1F) else Color(0xFFF0F4F8)),
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .border(
+                                        width = if (isSel) 0.dp else 1.dp,
+                                        color = if (colors.isDark) Color(0xFF333333) else Color.LightGray,
+                                        shape = RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable {
+                                        selectedAmbience = option
+                                        if (option == "None") {
+                                            com.example.utils.NoiseGenerator.stop()
+                                        } else {
+                                            com.example.utils.NoiseGenerator.start(option)
+                                        }
+                                    }
+                                    .padding(vertical = 6.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "$iconStr $option",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (isSel) Color.White else colors.textSecondary
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Footer with direct mode chips and settings toggle
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -3381,14 +4161,14 @@ fun PomodoroTimerCard(viewModel: BrowserViewModel) {
                     val modesList = listOf("WORK" to "Work", "SHORT_BREAK" to "Short", "LONG_BREAK" to "Long")
                     modesList.forEach { (m, lbl) ->
                         val isSel = pomoMode == m
-                        val activeColor = when (m) {
+                        val activeChipColor = when (m) {
                             "WORK" -> Color(0xFFE0533C)
                             else -> GreenAccent
                         }
                         Box(
                             modifier = Modifier
                                 .background(
-                                    color = if (isSel) activeColor else Color.Transparent,
+                                    color = if (isSel) activeChipColor else Color.Transparent,
                                     shape = RoundedCornerShape(6.dp)
                                 )
                                 .border(

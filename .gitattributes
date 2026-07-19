@@ -1,0 +1,27 @@
+# Auto-detect text files and normalize line endings
+* text=auto
+
+# Define explicit text formats
+*.kt text
+*.java text
+*.xml text
+*.gradle text
+*.gradle.kts text
+*.properties text
+*.json text
+*.md text
+*.txt text
+
+# Force gradlew to use LF line endings so it runs on Unix/Linux systems after clone
+/gradlew text eol=lf
+/gradlew.bat text eol=crlf
+
+# Prevent binary files from being modified or corrupted by Git's line ending conversions
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.keystore binary
